@@ -16,14 +16,22 @@ class Category(models.Model):
 
 
 class Product(models.Model):
-    price       = models.DecimalField(max_digits = 10, decimal_places = 2)
-    description = models.TextField()
-    calory      = models.DecimalField(max_digits = 10, decimal_places = 2)
-    category    = models.ForeignKey("Category", on_delete = models.CASCADE)
-    option      = models.ForeignKey("Option", on_delete = models.CASCADE)
+    price            = models.DecimalField(max_digits = 10, decimal_places = 2)
+    description      = models.TextField()
+    calory           = models.DecimalField(max_digits = 10, decimal_places = 2)
+    category         = models.ForeignKey("Category", on_delete = models.CASCADE)
+    relative_product = models.ManyToManyField("self", through = "RelativeProduct", symmetrical = False)
 
     class Meta:
         db_table = "products"
+
+class RelativeProduct(models.Model):
+    name             = models.CharField(max_length = 30)
+    product          = models.ForeignKey("Product", on_delete = models.CASCADE, related_name = "MainProduct")
+    relative_product = models.ForeignKey("Product", on_delete = models.CASCADE, related_name = "OptionalProduct")
+
+    class Meta:
+        db_table = "relativeproducts"
 
 
 class ProductImage(models.Model):
@@ -37,7 +45,7 @@ class ProductImage(models.Model):
 class Ingredient(models.Model):
     name    = models.CharField(max_length = 30)
     made_in = modles.CharField(max_length = 30)
-    product   = modles.ForeignKey("Product", on_delete = models.CASCADE)
+    product = modles.ForeignKey("Product", on_delete = models.CASCADE)
 
     class Meta:
         db_table = "ingredients"
@@ -60,23 +68,9 @@ class AllergenStatus(models.Model):
 class ProductAllergen(models.Model):
     product  = models.ForeignKey("Product", on_delete = models.CASCADE)
     allergen = models.ForeignKey("Allergen", on_delete = models.CASCADE)
-    status = models.ForeignKey("AllergenStatus", on_delete = models.CASCADE)
+    status   = models.ForeignKey("AllergenStatus", on_delete = models.CASCADE)
 
     class Meta:
         db_table = "product_allergens"
 
 
-
-class Option(models.Model):
-    name  = models.CharField(max_length = 30)
-    price = models.DecimalField(max_digits = 10, decimal_places = 2)
-
-    class Meta:
-        db_table = "options"
-
-class ProductOption(models.Model):
-    product = models.ForeignKey("Product", on_delete = models.CASCADE)
-    option  = models.ForeignKey("Option", on_delete = models.CASCADE)
-    
-    class Meta:
-        db_table = "productoptions"

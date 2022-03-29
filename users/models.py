@@ -24,7 +24,3 @@ class Cart(models.Model):
     class Meta:
         db_table = "carts"
 
-
-class CartOption(models.Model):
-    cart = models.ForeignKey("Cart", on_delete = CASCADE)
-    option = models.ForeignKey("products.Option", on_delete = CASCADE)
