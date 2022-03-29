@@ -1,6 +1,6 @@
 from django.db import models
 
-from products.models import Product, Option
+from products.models import Product
 
 class User(models.Model):
     first_name = models.CharField(max_length = 30)
@@ -17,8 +17,8 @@ class User(models.Model):
 
 
 class Cart(models.Model):
-    user     = models.ForeignKey("User", on_delete = CASCADE)
-    product  = models.ForeignKey("products.Product", on_delete = CASCADE)
+    user     = models.ForeignKey("User", on_delete = models.CASCADE)
+    product  = models.ForeignKey("products.Product", on_delete = models.CASCADE)
     quantity = models.IntegerField()
 
     class Meta:
