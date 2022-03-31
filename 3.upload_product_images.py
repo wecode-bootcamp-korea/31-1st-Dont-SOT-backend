@@ -6,7 +6,7 @@ import sys
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "SOTJIMAYO.settings")
 django.setup()
 
-from products.models import ProductImage
+from products.models import Product, ProductImage
 
 CSV_PRODUCT_IMAGES      = 'products/csv_files/product_images.csv'
 

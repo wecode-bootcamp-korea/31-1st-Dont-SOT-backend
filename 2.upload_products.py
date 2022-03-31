@@ -6,9 +6,10 @@ import sys
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "SOTJIMAYO.settings")
 django.setup()
 
-from products.models import Product
+from products.models import Product, Category, RelativeProduct
 
 CSV_PRODUCTS            = 'products/csv_files/products.csv'
+CSV_RELATIVE_PRODUCTS   = 'products/csv_files/relative_products.csv'
 
 def products():
 

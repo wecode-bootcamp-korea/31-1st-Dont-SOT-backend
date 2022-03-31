@@ -16,7 +16,7 @@ class Category(models.Model):
 
 
 class Product(models.Model): 
-    name             = models.CharField(max_length = 30)
+    name             = models.CharField(max_length = 30, null = True)
     price            = models.DecimalField(max_digits = 10, decimal_places = 2)
     description      = models.TextField()
     calory           = models.DecimalField(max_digits = 10, decimal_places = 2, null = True)
