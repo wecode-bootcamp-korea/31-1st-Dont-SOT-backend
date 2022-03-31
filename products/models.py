@@ -15,18 +15,19 @@ class Category(models.Model):
         db_table = "categories"
 
 
-class Product(models.Model):
+class Product(models.Model): 
+    name             = models.CharField(max_length = 30, null = True)
     price            = models.DecimalField(max_digits = 10, decimal_places = 2)
     description      = models.TextField()
-    calory           = models.DecimalField(max_digits = 10, decimal_places = 2)
-    category         = models.ForeignKey("Category", on_delete = models.CASCADE)
+    calory           = models.DecimalField(max_digits = 10, decimal_places = 2, null = True)
+    category         = models.ForeignKey("Category", on_delete = models.SET_NULL, null = True)
     relative_product = models.ManyToManyField("self", through = "RelativeProduct", symmetrical = False)
 
     class Meta:
         db_table = "products"
 
+
 class RelativeProduct(models.Model):
-    name             = models.CharField(max_length = 30)
     product          = models.ForeignKey("Product", on_delete = models.CASCADE, related_name = "MainProduct")
     relative_product = models.ForeignKey("Product", on_delete = models.CASCADE, related_name = "OptionalProduct")
 
@@ -43,8 +44,8 @@ class ProductImage(models.Model):
 
 
 class Ingredient(models.Model):
-    name    = models.CharField(max_length = 30)
-    made_in = models.CharField(max_length = 30)
+    name    = models.CharField(max_length = 30, null = True)
+    made_in = models.CharField(max_length = 30, null = True)
     product = models.ForeignKey("Product", on_delete = models.CASCADE)
 
     class Meta:
