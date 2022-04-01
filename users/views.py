@@ -37,13 +37,13 @@ class SignupView(View):
             password = data['password']
             username = data['username']
         
-            #validate_username(username)
+            validate_username(username)
             validate_password(password)
-            # validate_email(email)
+            validate_email(email)
 
 
-            # if User.objects.filter(email=email).exists():
-            #     return JsonResponse({"message" : "REGISTERED_EMAIL"}, status = 401)
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({"message" : "REGISTERED_EMAIL"}, status = 401)
 
             hashed_password  = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
