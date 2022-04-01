@@ -11,7 +11,7 @@ from products.models import Allergen, AllergenStatus, Product, ProductAllergen
 CSV_PRODUCT_ALLERGENS   = 'products/csv_files/product_allergens.csv'
 
 def productallergens():
-    with open(CSV_PRODUCT_ALLERGENS) as in_file:
+    with open(CSV_PRODUCT_ALLERGENS, encoding='cp949') as in_file:
         data_reader = csv.reader(in_file)
         next(data_reader, None)
 
