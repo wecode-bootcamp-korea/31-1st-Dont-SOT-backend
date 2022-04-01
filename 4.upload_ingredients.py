@@ -6,7 +6,7 @@ import sys
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "SOTJIMAYO.settings")
 django.setup()
 
-from products.models import Ingredient
+from products.models import Ingredient, Product
 
 CSV_PRODUCT_INGREDIENTS = 'products/csv_files/product_ingredients.csv'
 
