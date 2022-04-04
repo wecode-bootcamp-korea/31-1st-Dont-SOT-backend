@@ -765,3 +765,4 @@ zsdoc/data
 my_settings.py
 
 products/csv_files/*
+db_uploaders/*
