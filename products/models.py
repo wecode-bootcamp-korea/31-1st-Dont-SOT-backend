@@ -21,7 +21,7 @@ class Product(models.Model):
     description      = models.TextField()
     calory           = models.DecimalField(max_digits = 10, decimal_places = 2, null = True)
     category         = models.ForeignKey("Category", on_delete = models.SET_NULL, null = True)
-    sales            = models.IntegerField(default = 0)
+    #sales            = models.IntegerField(default = 0)
 
     class Meta:
         db_table = "products"
