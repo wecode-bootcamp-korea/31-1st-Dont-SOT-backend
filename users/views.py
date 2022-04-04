@@ -82,3 +82,72 @@ class SignInView(View):
         
         except User.DoesNotExist:
             return JsonResponse({'message':'INVALID_USER'}, status=401)
+
+class CartView(View):
+    
+    @SignInDecorator
+    def post(self, request)
+
+        data = json.loads(request.body)
+        product_id = data['product_id']
+        qunatity = data['quantity']
+        option = data['option']
+
+        if option:
+            product_id = RelativeProduct.objects.get(relative_product = product_id).product
+         
+        user = request.user
+        cart, created = Cart.objects.update_or_create(user = user.id, product = product_id, quantity = quantity)
+        return ({"message" : "SUCCESS", status = 200})
+
+        except RelativeProduct.DoesNotExist:
+            return({"message" : "SIZEUP_INVALID"}, status = 401)
+
+        except KeyError:
+            return ({"messgae" : KEY_ERROR}, status = 401)
+
+
+    @SignInDecorator
+    def patch(self, request)
+        
+        data = json.loads(request.body)
+        product_id = data['product_id']
+        qunatity = data['quantity']
+        option = data['option']
+
+        user = request.user
+        cart = Cart.objects.get(product = product_id)
+        
+        if quantity==0:
+            cart.delete()
+        
+        cart.update(quantity = quantity)
+        return ({"message" : "SUCCESS", status = 200})
+
+
+        
+    #detail page
+    @SignInDecorator
+    def get(self, request):
+        user = request.user
+        items = Cart.objects.filter(user = user)
+            for item in items:
+                if RelativeProduct.objects.get(item.product)
+                product = Product.objects.get(product)
+                result = 
+                {
+                    'product_id' : item.product
+                    'product_images' : [ for image in Product.objects.filter(product.id = item.product)]
+                    'produ'
+                }
+
+
+    @SignInDecorator
+    def delete(self, request):
+        if product_id:
+            user = request.user
+            cart = Cart.objects.filter(user = user.id, product = product_id)
+            cart.delete()
+            return ({"message" : "SUCCESS", status = 204})
+
+        except:
