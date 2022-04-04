@@ -16,12 +16,12 @@ class Category(models.Model):
 
 
 class Product(models.Model): 
-    name             = models.CharField(max_length = 30, null = True)
-    price            = models.DecimalField(max_digits = 10, decimal_places = 2)
-    description      = models.TextField()
-    calory           = models.DecimalField(max_digits = 10, decimal_places = 2, null = True)
-    category         = models.ForeignKey("Category", on_delete = models.SET_NULL, null = True)
-    relative_product = models.ManyToManyField("self", through = "RelativeProduct", symmetrical = False)
+    name               = models.CharField(max_length = 30, null = True)
+    price              = models.DecimalField(max_digits = 10, decimal_places = 2)
+    description        = models.TextField()
+    calory             = models.DecimalField(max_digits = 10, decimal_places = 2, null = True)
+    category           = models.ForeignKey("Category", on_delete = models.SET_NULL, null = True)
+    relative_product   = models.ManyToManyField("self", through = "RelativeProduct", symmetrical = False)
 
     class Meta:
         db_table = "products"
@@ -53,7 +53,8 @@ class Ingredient(models.Model):
 
 
 class Allergen(models.Model):
-    name = models.CharField(max_length = 30)
+    name             = models.CharField(max_length = 30)
+    allergenstatuses = models.ManyToManyField("AllergenStatus", through = "ProductAllergen", related_name="allergens")
 
     class Meta:
         db_table = "allergens"

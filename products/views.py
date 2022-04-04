@@ -1,120 +1,97 @@
-from django.views    import View
-from django.http     import JsonResponse
+import json
 
-from products.models import Menu, Category, Product, RelativeProduct, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
+from rest_framework            import exceptions
+from rest_framework.exceptions import ParseError
 
-class ProductAllView(View):
+from django.views              import View
+from django.http               import JsonResponse
+from django.core               import serializers
+
+from products.models           import Menu, Category, Product, RelativeProduct, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
+
+class ProductView(View):
     def get(self, request):
-       
-        category_id = request.GET.get('category_id')
+        menu     = request.GET.get('menu')
+        category = request.GET.get('category')
 
-        if category_id == None:
-            menus      = Menu.objects.all()
-            categories = Category.objects.all()
-            products   = Product.objects.all()
+        # try :
+        if not menu or category in request.GET:
+            raise exceptions.ParseError("NONE_MENU_OR_CATEGORY", 400)
 
-            results = [{
-                "id"       : menu.id,
-                "name"     : menu.name,
+        menus      = Menu.objects.filter(id=menu)
+        categories = Category.objects.filter(id=category)
+        products   = Product.objects.filter(category=categories[0])
+
+        results = [
+            {   
+                "menu"     : [{
+                    "id"   : menu.id,
+                    "name" : menu.name,
+                } for menu in menus],
+                
                 "category" : [{
-                    "id"      : category.id,
-                    "name"    : category.name,
-                    "product" : [{
-                        "id"    : product.id,
-                        "name"  : product.name,
-                        "image" : [product_image.image_url for product_image in ProductImage.objects.filter(product=product)],
-                        "price" : product.price
-                    } for product in Product.objects.filter(category=category)]
-                } for category in Category.objects.filter(menu=menu)]
-            } for menu in menus]
+                    "id"   : category.id, 
+                    "name" : category.name,
+                } for category in categories],
 
-            return JsonResponse({'results':results}, status=200)
+                "products" : [{
+                    "id"    : product.id,
+                    "name"  : product.name,
+                    "image" : [product_image.image_url for product_image in ProductImage.objects.filter(product=product)],
+                    "price" : int(product.price)
+                } for product in products]
+            }
+        ]
 
-        else:
-            categories = Category.objects.filter(id=category_id)
-            products = Product.objects.filter(category=categories[0])
-        
-            results = [
-                {   
-                    "category" : [{
-                        "id"   : category.id, 
-                        "name" : category.name,
-                    } for category in categories],
+        return JsonResponse({'results':results}, status=200)
 
-                    "products" : [{
-                        "id"    : product.id,
-                        "name"  : product.name,
-                        "image" : [product_image.image_url for product_image in ProductImage.objects.filter(product=product)],
-                        "price" : product.price
-                    } for product in products]
-                }
-            ]
+        # except ParseError as error:
+        #     return JsonResponse(
+        #         'Invalid JSON - {0}'.format(error.detail),
+        #         status=400
+        #     )
 
-            return JsonResponse({'results':results}, status=200)
-        
+        # except ParseError as e:
+        #     return ({'message':(e.message)}, status=400)
+                
 
-        # results = [{
-        #     "id"       : menu.id,
-        #     "name"     : menu.name,
-        #     "category" : [{
-        #         "id"      : category.id,
-        #         "name"    : category.name,
-        #         "product" : [{
-        #             "id"    : product.id,
-        #             "name"  : product.name,
-        #             "image" : [product_image.image_url for product_image in ProductImage.objects.filter(product=product)],
-        #             "price" : product.price
-        #         } for product in Product.objects.filter(category=category)]
-        #     } for category in Category.objects.filter(menu=menu)]
-        # } for menu in menus]
+class ProductDetailView(View):
+    def get(self, request, product_id):
+        try:
+            product             = Product.objects.get(id = product_id)
+            product_option      = Product.objects.get(name='곱빼기')
+            product_images      = ProductImage.objects.filter(product=product.id)
+            product_ingredients = Ingredient.objects.filter(product=product.id)
+            allergens           = Allergen.objects.all()
 
-        # return JsonResponse({'results':results}, status=200)
+            allergenlist = []
 
-        # results = [{
-        #     "name" : product.name,
-        #     ""
-        # } for product in products]
+            for allergen in allergens:
+                productallergen = ProductAllergen.objects.get(product = product.id, allergen = allergen.id)
+                allergenstatus  = AllergenStatus.objects.get(id = productallergen.status.id)
+                allergenlist += [{
+                    'id'              : allergen.id,
+                    'allergen_name'   : allergen.name,
+                    'status'          : allergenstatus.name
+                }]
 
-        # results = [{
-        #     "name"  : owner.name,
-        #     "email" : owner.email,
-        #     "age"   : owner.age,
-        #     "dogs"  : [{
-        #         "name" : dog.name,
-        #         "age"  : dog.age
-        #     } for dog in owner.dog_set.all()]
-        # } for owner in owners]
-        
+            results = {
+                    'image'           : [product_image.image_url for product_image in product_images],
+                    'name'            : product.name,
+                    'description'     : product.description,
+                    'option'          : product_option.name,
+                    'price'           : int(product.price),
+                    'calory'          : product.calory,
+                    'allergen'        : allergenlist,
+                    
+                    'ingredient'      : [{
+                            'id'         : product_ingredient.id,
+                            'name'       : product_ingredient.name,
+                            'made_in'    : product_ingredient.made_in
+                        } for product_ingredient in product_ingredients], 
+            }
+            
+            return JsonResponse({'results' : results} , status = 200)
 
-        # products = Product.objects.all()
-        
-        # for menu in menus:
-        #     for category in categoryies:
-        #         for product in products:
-        #             menu_id
-        #             category_id
-        #             product_id = product.id
-        #             product_name = product.name
-        #             product_images = Image.objects.filter(product = product)
-        #             product_price = product.price
-        #         ["id" : menu_id, "category" : menu_category , "categoryList" :
-        #         ["id" : , "miniCategory" : , "contents":
-        #         [{“id”: 1,
-        #             “menuName”: “두입 족발 도시락“,
-        #             “images”: “/images/fooditem.jpg”,
-        #             “price”: “5,800"} for product in products] for category in categories]
-        #             for menu in menus]
-
-
-        # :8000/products?category_id=10[]
-        # :8000/products?category_id=15
-        # :8000/products?category_id=100
-
-         # product = request.GET.get('product_id')
-        # for i in category_id:
-        #     category = Category.objects.get(category.id=i)
-        # categories = Category.objects.filter(id=category_id)
-        # products = Product.objects.filter(category=categories[0])   
-        # products = Product.objects.filter(id=categories.name)
-        # product  = Product.objects.get(id=product_id)
-        # images   = ProductImage.objects.filter(product_id=product.id)
+        except Product.DoesNotExist:
+            return JsonResponse({'message' : 'INVALID_PRODUCT_ID'} , status = 404)
