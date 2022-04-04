@@ -21,20 +21,11 @@ class Product(models.Model):
     description      = models.TextField()
     calory           = models.DecimalField(max_digits = 10, decimal_places = 2, null = True)
     category         = models.ForeignKey("Category", on_delete = models.SET_NULL, null = True)
-    relative_product = models.ManyToManyField("self", through = "RelativeProduct", symmetrical = False)
+    relative_product = models.ForeignKey("self", on_delete=models.CASCADE, null=True)
 
     class Meta:
         db_table = "products"
-
-
-class RelativeProduct(models.Model):
-    product          = models.ForeignKey("Product", on_delete = models.CASCADE, related_name = "MainProduct")
-    relative_product = models.ForeignKey("Product", on_delete = models.CASCADE, related_name = "OptionalProduct")
-
-    class Meta:
-        db_table = "relativeproducts"
-
-
+        
 class ProductImage(models.Model):
     image_url = models.URLField(max_length = 200)
     product   = models.ForeignKey("Product", on_delete = models.CASCADE)
