@@ -88,12 +88,12 @@ class ProductBestView(View):
         if sort == 'best':
             product_sale = Product.objects.order_by('-sale')
 
-        results =[{
-            'id'    : product.id,
-            'image' : [product_image.image_url for product_image in product_images],
-            'name'  : product.name,
-            'price' : int(product.price)
-        } for product in products]
+            results =[{
+                'id'    : product.id,
+                'image' : [product_image.image_url for product_image in product_images],
+                'name'  : product.name,
+                'price' : int(product.price)
+            } for product in products]
 
         return JsonResponse({'results' : results} , status = 200)
 
