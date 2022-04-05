@@ -56,7 +56,7 @@ class ProductDetailView(View):
             allergens           = Allergen.objects.all()
             allergenlist = []
             for allergen in allergens:
-                productallergen = ProductAllergen.objects.get(product = product.id, allergen = allergen.id)
+                productallergen = ProductAllergen.objects.filter(product = product.id, allergen = allergen.id)[0]
                 allergenstatus  = AllergenStatus.objects.get(id = productallergen.status.id)
                 allergenlist += [{
                     'id'              : allergen.id,
