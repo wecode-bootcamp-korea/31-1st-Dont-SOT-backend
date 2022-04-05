@@ -72,3 +72,23 @@ class ProductDetailView(View):
 
         except Product.DoesNotExist:
             return JsonResponse({'message' : 'INVALID_PRODUCT'} , status = 401) 
+
+class ProductBestView(View):
+    def get(self, request):
+        sorting        = request.GET.get('sorting')
+        
+        try:
+            if sorting == 'best':
+                product_sales = Product.objects.filter(relative_product = None).order_by('-sales')[:14]
+
+                results =[{
+                        'id'    : product.id,
+                        'image' : product.productimage_set.first().image_url,
+                        'name'  : product.name,
+                        'price' : int(product.price)
+                    } for product in product_sales]
+
+                return JsonResponse({'results' : results} , status = 200)
+
+        except ValueError:
+           return JsonResponse({"message":'INVALID_VALUE'}, status = 400)
