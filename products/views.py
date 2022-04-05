@@ -10,8 +10,8 @@ from products.models           import Menu, Category, Product, ProductImage, Ing
 class ProductView(View):
     def get(self, request):
         category = request.GET.get('category')
-        limit    = int(request.Get.get('limit', 30))
-        offset   = int(request.Get.get('offset', 0))
+        limit    = int(request.GET.get('limit', 30))
+        offset   = int(request.GET.get('offset', 0))
 
         if not category:
             return JsonResponse({'message':'NONE_CATEGORY'}, status=401)
