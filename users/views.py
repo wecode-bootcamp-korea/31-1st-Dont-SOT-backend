@@ -83,90 +83,93 @@ class SignInView(View):
         except User.DoesNotExist:
             return JsonResponse({'message':'INVALID_USER'}, status=401)
 
-class CartView(View):
-    
+
+class CartView(View):    
     @SignInDecorator
     def post(self, request):
+        
+        try:
+            data           = json.loads(request.body)
+            product_id     = data['product_id']
+            qunatity       = data['quantity']
+            sizeup         = data['sizeup']
+            sizeup_product = Product.objects.get(relative_product_id = product_id)
 
-        data = json.loads(request.body)
-        product_id = data['product_id']
-        qunatity = data['quantity']
-        option = data['option']
-        sizeup_product = RelativeProduct.objects.get(relative_product = product_id)
+            if sizeup_product==None:
+                return JsonResponse({"message" : "SIZEUP_INVALID"}, status = 401)
 
-        if not sizeup_product:
-            return({"message" : "SIZEUP_INVALID"}, status = 401)
-
-        if option and sizeup_product:
-            product_id = RelativeProduct.objects.get(relative_product = product_id).product
-         
-        user = request.user
-        cart, created = Cart.objects.get_or_create(user = user.id, product = product_id)
-        cart.quantity = quantity
-        return ({"message" : "SUCCESS", status = 200})
+            if sizeup:
+                product = Product.objects.get(relative_product_id = product_id)
+            
+            cart, created = Cart.objects.get_or_create(user = request.user, product_id = product.id)
+            cart.quantity = quantity
+            
+            return JsonResponse({"message" : "SUCCESS"},  status = 200)
 
         except KeyError:
-            return ({"messgae" : KEY_ERROR}, status = 401)
+            return JsonResponse({"messgae" : "KEY_ERROR"}, status = 401)
 
 
     @SignInDecorator
-    def patch(self, request)
+    def patch(self, request):
         
-        data = json.loads(request.body)
+        data       = json.loads(request.body)
         product_id = data['product_id']
-        qunatity = data['quantity']
-        option = data['option']
+        qunatity   = data['quantity']
+        sizeup     = data['sizeup']
 
-        user = request.user
+        if sizeup:
+            product = Product.objects.get(relative_product_id = product_id)
 
-        if option:
-            product_id = RelativeProduct.objects.get(relative_product = product_id).product
-
-        cart = Cart.objects.get(product = product_id)
+        cart = Cart.objects.get(user = request.user, product = product.id)
         
         if quantity==0:
             cart.delete()
-            return ({"message" : "PRODUCT_DELETED_FORM_CART", status = 204})
+            return JsonResponse({"message" : "PRODUCT_DELETED_FROM_CART"} , status = 204)
     
         if quantity < 0:
-            return ({"message" : "INVALID_QUANTITY", status = 401})
+            return JsonResponse({"message" : "INVALID_QUANTITY"}, status = 401)
         
         cart.quantity = quantity
-        return ({"message" : "SUCCESS", status = 200})
+        return JsonResponse({"message" : "SUCCESS"}, status = 200)
 
 
-        
-    # #detail page
-    # @SignInDecorator
-    # def get(self, request):
-    #     user = request.user
-    #     items = Cart.objects.filter(user = user)
-    #         for item in items:
-    #             if Product.objects.get(item.product)
-    #             product = Product.objects.get(product)
-    #             result = 
-    #             {
-    #                 'product_id' : item.product
-    #                 'product_images' : [ for image in Product.objects.filter(product.id = item.product)]
-    #                 'produ'
-    #             }
+    
+    @SignInDecorator
+    def get(self, request):
+        carts = Cart.objects.filter(user = request.user)
+        results = []
+        for cart in carts:
+            product = cart.product
+            option = False
+            if product.relative_product:
+                option = True
+                product = product.relative_product 
+            results += [{
+                "product_id" : product.id,
+                "price" : product.price,
+                "option" : option ,
+                "quantity" : cart.quantity
+            }]
+        return JsonResponse({"results" : results}, status = 200)
+
 
     @SignInDecorator
     def delete(self, request):
         
-        data = json.loads(request.body)
+        data       = json.loads(request.body)
         product_id = data['product_id']
-        option = data['option']
-        user = request.user
+        sizeup     = data['sizeup']
+        user       = request.user
 
-       if option:
-            product_id = RelativeProduct.objects.get(relative_product = product_id).product
+        if sizeup:
+            product_id = Product.objects.get(relative_product_id = product_id).id
 
-        cart = Cart.objects.get(user = user.id, product = product_id)
+        cart = Cart.objects.get(user = user, product_id = product_id)
 
-        if not cart:
-            return({"message" : "INVALID_REQUEST"}, status = 401)
+        if cart == None:
+            return JsonResponse({"message" : "INVALID_REQUEST"}, status = 401)
 
         cart.delete()
-        return ({"message" : "SUCCESS", status = 204})
+        return JsonResponse({"message" : "SUCCESS"}, status = 204)
 

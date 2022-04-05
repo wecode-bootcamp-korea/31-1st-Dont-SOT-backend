@@ -50,9 +50,9 @@ class ProductDetailView(View):
     def get(self, request, product_id):
         try:
             product             = Product.objects.get(id = product_id)
-            product_option      = Product.objects.get(name='곱빼기')
-            product_images      = ProductImage.objects.filter(product=product.id)
-            product_ingredients = Ingredient.objects.filter(product=product.id)
+            #product_option      = Product.objects.get(name='곱빼기')
+            product_images      = ProductImage.objects.filter(product_id=product_id)
+            product_ingredients = Ingredient.objects.filter(product_id=product_id)
             allergens           = Allergen.objects.all()
             allergenlist = []
             for allergen in allergens:
