@@ -6,8 +6,10 @@ from django.core.exceptions import ValidationError
 from django.conf  import settings
 
 
-from users.models      import User
+from users.models      import User, Cart
 from users.validations import validate_username, validate_email, validate_password
+
+# 127.0.0.1:8000/products/1
 
 class IdcheckView(View):
     def post(self, request):
@@ -84,14 +86,14 @@ class SignInView(View):
             return JsonResponse({'message':'INVALID_USER'}, status=401)
 
 class CartView(View):
-    
     @SignInDecorator
     def post(self, request):
+        data           = json.loads(request.body)
 
-        data = json.loads(request.body)
-        product_id = data['product_id']
-        qunatity = data['quantity']
-        option = data['option']
+        product_id     = data['product_id']
+        quantity       = data['quantity']
+        option         = data['option']
+
         sizeup_product = RelativeProduct.objects.get(relative_product = product_id)
 
         if not sizeup_product:
@@ -100,14 +102,21 @@ class CartView(View):
         if option and sizeup_product:
             product_id = RelativeProduct.objects.get(relative_product = product_id).product
          
-        user = request.user
-        cart, created = Cart.objects.get_or_create(user = user.id, product = product_id)
-        cart.quantity = quantity
-        return ({"message" : "SUCCESS", status = 200})
+        cart, created = Cart.objects.get_or_create(
+            user       = request.user,
+            product_id = product_id,
+            defaults = {
+                quantity : quantity
+            }
+        )
 
-        except KeyError:
-            return ({"messgae" : KEY_ERROR}, status = 401)
+        if not created:
+            cart.quantity = quantity
 
+        return JsonResponse({"message" : "SUCCESS"}, status=200)
+
+        # except KeyError:
+        #     return ({"messgae" : KEY_ERROR}, status = 401)
 
     @SignInDecorator
     def patch(self, request)
@@ -136,7 +145,7 @@ class CartView(View):
 
 
         
-    # #detail page
+    #detail page
     # @SignInDecorator
     # def get(self, request):
     #     user = request.user
