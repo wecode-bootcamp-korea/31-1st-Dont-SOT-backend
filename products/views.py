@@ -2,28 +2,28 @@ import json
 
 from django.views     import View
 from django.http      import JsonResponse
-from django.core      import serializers
 from products.models  import Menu, Category, Product, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
 
 
 class ProductView(View):
-
     def get(self, request):
-
         category = request.GET.get('category')
         limit    = int(request.GET.get('limit', 30))
         offset   = int(request.GET.get('offset', 0))
 
         if not category:
             return JsonResponse({'message':'NONE_CATEGORY'}, status=400)
+
         categories = Category.objects.filter(name=category)
         products   = Product.objects.filter(category__name = category, relative_product = None)[offset:offset+limit]
+
         results = [
             {
                 "category" : [{
                     "id"   : category.id,
                     "name" : category.name,
                 } for category in categories],
+
                 "products" : [{
                     "id"    : product.id,
                     "name"  : product.name,
@@ -37,9 +37,7 @@ class ProductView(View):
 
 
 class ProductDetailView(View):
-
     def get(self, request, product_id):
-
         try:
             product             = Product.objects.get(id = product_id)
             product_images      = ProductImage.objects.filter(product=product.id)
@@ -55,6 +53,7 @@ class ProductDetailView(View):
                     'allergen_name'   : allergen.name,
                     'status'          : allergenstatus.name
                 }]
+
             results = {
                     'image'           : [product_image.image_url for product_image in product_images],
                     'name'            : product.name,
@@ -74,28 +73,3 @@ class ProductDetailView(View):
         except Product.DoesNotExist:
 
             return JsonResponse({'message' : 'INVALID_PRODUCT'} , status = 401)
-
-
-class ProductBestView(View):
-
-    def get(self, request):
-
-        sorting = request.GET.get('sorting')
-
-        try:
-            
-            if sorting == 'best':
-                product_sales = Product.objects.filter(relative_product = None).order_by('-sales')[:14]
-                results =[
-                    {
-                        'id'    : product.id,
-                        'image' : product.productimage_set.first().image_url,
-                        'name'  : product.name,
-                        'price' : int(product.price)
-                    } for product in product_sales]
-
-                return JsonResponse({'results' : results} , status = 200)
-
-        except ValueError:
-            
-           return JsonResponse({"message":'INVALID_VALUE'}, status = 400)
