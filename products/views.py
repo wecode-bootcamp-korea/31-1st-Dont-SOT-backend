@@ -1,10 +1,8 @@
-from django.shortcuts import render
-
 import json
 
 from django.views              import View
 from django.http               import JsonResponse
-from django.core               import serializers
+
 from products.models           import Menu, Category, Product, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
 
 class ProductView(View):
