@@ -1,11 +1,12 @@
 import json, re, bcrypt, jwt
 
-from django.http  import JsonResponse
-from django.views import View
+from django.http            import JsonResponse
+from django.views           import View
 from django.core.exceptions import ValidationError
-from django.conf  import settings
+from django.conf            import settings
+from django.db.models       import Case, When
 
-from products.models   import *
+from products.models   import Menu, Category, Product, ProductImage
 from users.models      import User, Cart
 from users.validations import validate_username, validate_email, validate_password
 from users.utils       import signin_decorator
@@ -86,23 +87,27 @@ class SignInView(View):
 
 
 class CartView(View):    
-    
+    @signin_decorator
     def post(self, request):
         
         try:
-            data           = json.loads(request.body)
-            product_name     = data['product_name']
-            sizeup         = data['sizeup']
-            product = Product.objects.get(relative_product_name = product_name)
+            data         = json.loads(request.body)
+            product_name = data['product_name']
+            sizeup       = data['sizeup']
+            product = Product.objects.get(relative_product__name = product_name)
 
             if sizeup:
-                product = Product.objects.get(relative_product_name = product_name)
+                product = Product.objects.get(relative_product__name = product_name)
             
-                if product==None:
+                if not product:
                     return JsonResponse({'message': 'SIZEUP_INVALID'}, status = 401)
 
-            cart, created = Cart.objects.get_or_create(user = request.user, product_id = product.id)
-            cart.quantity += 1
+            cart, created = Cart.objects.get_or_create(user = request.user, product_id = product.id, defaults={'quantity': 1})
+            
+            if not created:
+                cart_quantity = cart.quantity
+                Cart.objects.filter(user = request.user, product_id = product.id).update(quantity = cart_quantity+1)
+                return JsonResponse({"message" : "ALREADY_EXIST"}, status = 200)
             
             return JsonResponse({"message" : "SUCCESS"},  status = 200)
 
@@ -111,68 +116,46 @@ class CartView(View):
 
 
     @signin_decorator
-    def patch(self, request):
+    def patch(self, request, cart_id):
         
         data       = json.loads(request.body)
-        product_id = data['product_id']
-        qunatity   = data['quantity']
-        sizeup     = data['sizeup']
+        quantity   = data['quantity']
+ 
+        Cart.objects.filter(id=cart_id).update(quantity = quantity)
 
-        if sizeup:
-            product = Product.objects.get(relative_product_id = product_id)
-
-        cart = Cart.objects.get(user = request.user, product_id = product.id)
-        
-        if quantity==0:
-            cart.delete()
-            return JsonResponse({"message" : "PRODUCT_DELETED_FROM_CART"} , status = 204)
-    
-        if quantity < 0:
-            return JsonResponse({"message" : "INVALID_QUANTITY"}, status = 401)
-        
-        cart.quantity = quantity
         return JsonResponse({"message" : "SUCCESS"}, status = 200)
 
 
     
     @signin_decorator
     def get(self, request):
-        carts = Cart.objects.filter(user = request.user)
-        results = []
-        
-        for cart in carts:
-            product = cart.product
-            sizeup = False
-            if Product.objects.get(relative_product_id = product_id):
-                option = True
-                product = product.relative_product 
-            results += [{
-                "product_id" : product.id,
-                "price" : int(product.price),
-                "sizeup" : sizeup ,
-                "quantity" : cart.quantity,
-                "image" : product.productimage_set.first().image_url,
-                "product_name" : product.name
-            }]
+        try:
+            carts = Cart.objects.filter(user_id = request.user).annotate(
+                has_relative_product = Case(When(product__isnull=True, then=False), default=True)
+            )
+
+        except Cart.DoesNotExist:
+            return JsonResponse({"message" : "INVALID_REQUEST"}, status = 401)
+
+        results = [{
+            "cart_id" : cart.id,
+            "price" : int(cart.product.price),
+            "sizeup" : cart.has_relative_product,
+            "quantity" : cart.quantity,
+            #"image" : cart.product.productimage_set.first().image_url,
+            "product_name" : cart.product.name
+        } for cart in carts]
+
         return JsonResponse({"results" : results}, status = 200)
 
 
     @signin_decorator
-    def delete(self, request):
-        
-        data       = json.loads(request.body)
-        product_id = data['product_id']
-        sizeup     = data['sizeup']
-        user       = request.user
+    def delete(self, request, cart_id):
+        try:
+            cart = Cart.objects.get(id = cart_id).delete()
 
-        if sizeup:
-            product_id = Product.objects.get(relative_product_id = product_id).id
-
-        cart = Cart.objects.get(user = user, product_id = product_id)
-
-        if cart == None:
+        except Cart.DoesNotExist:
             return JsonResponse({"message" : "INVALID_REQUEST"}, status = 401)
 
-        cart.delete()
         return JsonResponse({"message" : "SUCCESS"}, status = 204)
 

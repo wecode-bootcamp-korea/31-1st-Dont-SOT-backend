@@ -1,31 +1,25 @@
-#from django.shortcuts import render
-
-# Create your views here.
-#여기부터지운다
-
 import json
-# from rest_framework            import exceptions
-# from rest_framework.exceptions import ParseError
-from django.views              import View
-from django.http               import JsonResponse
-from django.core               import serializers
-from products.models           import Menu, Category, Product, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
+
+from django.views     import View
+from django.http      import JsonResponse
+from django.core      import serializers
+from products.models  import Menu, Category, Product, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
+
+
 class ProductView(View):
+
     def get(self, request):
-        #menu     = request.GET.get('menu')
+
         category = request.GET.get('category')
-        # try :
-        # if not menu or category in request.GET:
-        #     raise exceptions.ParseError("NONE_MENU_OR_CATEGORY", 400)
-        #menus      = Menu.objects.filter(id=menu)
+        limit    = int(request.GET.get('limit', 30))
+        offset   = int(request.GET.get('offset', 0))
+
+        if not category:
+            return JsonResponse({'message':'NONE_CATEGORY'}, status=400)
         categories = Category.objects.filter(name=category)
-        products   = Product.objects.filter(category=categories[0])
+        products   = Product.objects.filter(category__name = category, relative_product = None)[offset:offset+limit]
         results = [
             {
-                # "menu"     : [{
-                #     "id"   : menu.id,
-                #     "name" : menu.name,
-                # } for menu in menus],
                 "category" : [{
                     "id"   : category.id,
                     "name" : category.name,
@@ -33,30 +27,28 @@ class ProductView(View):
                 "products" : [{
                     "id"    : product.id,
                     "name"  : product.name,
-                    "image" : [product_image.image_url for product_image in ProductImage.objects.filter(product=product)],
+                    "image" : [product_image.image_url for product_image in product.productimage_set.all()],
                     "price" : int(product.price)
                 } for product in products]
             }
         ]
+
         return JsonResponse({'results':results}, status=200)
-        # except ParseError as error:
-        #     return JsonResponse(
-        #         'Invalid JSON - {0}'.format(error.detail),
-        #         status=400
-        #     )
-        # except ParseError as e:
-        #     return ({'message':(e.message)}, status=400)
+
+
 class ProductDetailView(View):
+
     def get(self, request, product_id):
+
         try:
             product             = Product.objects.get(id = product_id)
-            #product_option      = Product.objects.get(name='곱빼기')
-            product_images      = ProductImage.objects.filter(product_id=product_id)
-            product_ingredients = Ingredient.objects.filter(product_id=product_id)
+            product_images      = ProductImage.objects.filter(product=product.id)
+            product_ingredients = Ingredient.objects.filter(product=product.id)
             allergens           = Allergen.objects.all()
             allergenlist = []
+
             for allergen in allergens:
-                productallergen = ProductAllergen.objects.filter(product = product.id, allergen = allergen.id)[0]
+                productallergen = ProductAllergen.objects.get(product = product.id, allergen = allergen.id)
                 allergenstatus  = AllergenStatus.objects.get(id = productallergen.status.id)
                 allergenlist += [{
                     'id'              : allergen.id,
@@ -67,7 +59,6 @@ class ProductDetailView(View):
                     'image'           : [product_image.image_url for product_image in product_images],
                     'name'            : product.name,
                     'description'     : product.description,
-                    # 'option'          : product_option.name,
                     'price'           : int(product.price),
                     'calory'          : product.calory,
                     'allergen'        : allergenlist,
@@ -77,6 +68,34 @@ class ProductDetailView(View):
                             'made_in'    : product_ingredient.made_in
                         } for product_ingredient in product_ingredients],
             }
+
             return JsonResponse({'results' : results} , status = 200)
+
         except Product.DoesNotExist:
-            return JsonResponse({'message' : 'INVALID_PRODUCT_ID'} , status = 404)
+
+            return JsonResponse({'message' : 'INVALID_PRODUCT'} , status = 401)
+
+
+class ProductBestView(View):
+
+    def get(self, request):
+
+        sorting = request.GET.get('sorting')
+
+        try:
+            
+            if sorting == 'best':
+                product_sales = Product.objects.filter(relative_product = None).order_by('-sales')[:14]
+                results =[
+                    {
+                        'id'    : product.id,
+                        'image' : product.productimage_set.first().image_url,
+                        'name'  : product.name,
+                        'price' : int(product.price)
+                    } for product in product_sales]
+
+                return JsonResponse({'results' : results} , status = 200)
+
+        except ValueError:
+            
+           return JsonResponse({"message":'INVALID_VALUE'}, status = 400)
