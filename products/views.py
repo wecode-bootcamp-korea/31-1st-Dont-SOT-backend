@@ -9,23 +9,23 @@ import json
 from django.views              import View
 from django.http               import JsonResponse
 from django.core               import serializers
-from products.models           import Menu, Category, Product, RelativeProduct, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
+from products.models           import Menu, Category, Product, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
 class ProductView(View):
     def get(self, request):
-        menu     = request.GET.get('menu')
+        #menu     = request.GET.get('menu')
         category = request.GET.get('category')
         # try :
         # if not menu or category in request.GET:
         #     raise exceptions.ParseError("NONE_MENU_OR_CATEGORY", 400)
-        menus      = Menu.objects.filter(id=menu)
-        categories = Category.objects.filter(id=category)
+        #menus      = Menu.objects.filter(id=menu)
+        categories = Category.objects.filter(name=category)
         products   = Product.objects.filter(category=categories[0])
         results = [
             {
-                "menu"     : [{
-                    "id"   : menu.id,
-                    "name" : menu.name,
-                } for menu in menus],
+                # "menu"     : [{
+                #     "id"   : menu.id,
+                #     "name" : menu.name,
+                # } for menu in menus],
                 "category" : [{
                     "id"   : category.id,
                     "name" : category.name,

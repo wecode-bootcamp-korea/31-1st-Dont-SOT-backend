@@ -5,9 +5,10 @@ from django.views import View
 from django.core.exceptions import ValidationError
 from django.conf  import settings
 
-
-from users.models      import User
+from products.models   import *
+from users.models      import User, Cart
 from users.validations import validate_username, validate_email, validate_password
+from users.utils       import signin_decorator
 
 class IdcheckView(View):
     def post(self, request):
@@ -81,28 +82,27 @@ class SignInView(View):
             return JsonResponse({'message':'KEY_ERROR'}, status=400)
         
         except User.DoesNotExist:
-            return JsonResponse({'message':'INVALID_USER'}, status=401)
+            return JsonResponse({'message':'INVALID_USER'}, status = 401)
 
 
 class CartView(View):    
-    @SignInDecorator
+    
     def post(self, request):
         
         try:
             data           = json.loads(request.body)
-            product_id     = data['product_id']
-            qunatity       = data['quantity']
+            product_name     = data['product_name']
             sizeup         = data['sizeup']
-            sizeup_product = Product.objects.get(relative_product_id = product_id)
-
-            if sizeup_product==None:
-                return JsonResponse({"message" : "SIZEUP_INVALID"}, status = 401)
+            product = Product.objects.get(relative_product_name = product_name)
 
             if sizeup:
-                product = Product.objects.get(relative_product_id = product_id)
+                product = Product.objects.get(relative_product_name = product_name)
             
+                if product==None:
+                    return JsonResponse({'message': 'SIZEUP_INVALID'}, status = 401)
+
             cart, created = Cart.objects.get_or_create(user = request.user, product_id = product.id)
-            cart.quantity = quantity
+            cart.quantity += 1
             
             return JsonResponse({"message" : "SUCCESS"},  status = 200)
 
@@ -110,7 +110,7 @@ class CartView(View):
             return JsonResponse({"messgae" : "KEY_ERROR"}, status = 401)
 
 
-    @SignInDecorator
+    @signin_decorator
     def patch(self, request):
         
         data       = json.loads(request.body)
@@ -121,7 +121,7 @@ class CartView(View):
         if sizeup:
             product = Product.objects.get(relative_product_id = product_id)
 
-        cart = Cart.objects.get(user = request.user, product = product.id)
+        cart = Cart.objects.get(user = request.user, product_id = product.id)
         
         if quantity==0:
             cart.delete()
@@ -135,26 +135,29 @@ class CartView(View):
 
 
     
-    @SignInDecorator
+    @signin_decorator
     def get(self, request):
         carts = Cart.objects.filter(user = request.user)
         results = []
+        
         for cart in carts:
             product = cart.product
-            option = False
-            if product.relative_product:
+            sizeup = False
+            if Product.objects.get(relative_product_id = product_id):
                 option = True
                 product = product.relative_product 
             results += [{
                 "product_id" : product.id,
-                "price" : product.price,
-                "option" : option ,
-                "quantity" : cart.quantity
+                "price" : int(product.price),
+                "sizeup" : sizeup ,
+                "quantity" : cart.quantity,
+                "image" : product.productimage_set.first().image_url,
+                "product_name" : product.name
             }]
         return JsonResponse({"results" : results}, status = 200)
 
 
-    @SignInDecorator
+    @signin_decorator
     def delete(self, request):
         
         data       = json.loads(request.body)
