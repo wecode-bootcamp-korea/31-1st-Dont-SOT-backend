@@ -2,6 +2,7 @@ import json
 
 from django.views              import View
 from django.http               import JsonResponse
+from django.db.models          import Count
 
 from products.models           import Menu, Category, Product, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
 
@@ -70,3 +71,30 @@ class ProductDetailView(View):
 
         except Product.DoesNotExist:
             return JsonResponse({'message' : 'INVALID_PRODUCT'} , status = 401) 
+
+class ProductSortView(View):
+    def get(self, request):
+        sorting = request.GET.get('sorting')
+        
+        try:
+            sorting_option = {'sale':'-sales', 'low_price':'price', 'high_price':'-price'}
+
+            for option in sorting_option.keys():
+                if option == sorting:
+                    product_sorted = Product.objects.filter(relative_product = None).order_by(sorting_option.get(option))[:14]
+
+            if sorting == 'many_ingredient':
+                product_sorted = Product.objects.filter(relative_product = None).annotate(ingredient_count=Count('ingredient')).order_by('-ingredient_count')[:14]
+
+            results =[
+                {
+                    'id'    : product.id,
+                    'image' : product.productimage_set.first().image_url,
+                    'name'  : product.name,
+                    'price' : int(product.price)
+                } for product in product_sorted]
+
+            return JsonResponse({'results' : results} , status = 200)
+
+        except ValueError:
+           return JsonResponse({"message":'INVALID_VALUE'}, status = 400)
