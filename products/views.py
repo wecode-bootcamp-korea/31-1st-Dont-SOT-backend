@@ -14,7 +14,7 @@ class ProductView(View):
         offset   = int(request.GET.get('offset', 0))
 
         if not category:
-            return JsonResponse({'message':'NONE_CATEGORY'}, status=401)
+            return JsonResponse({'message':'NONE_CATEGORY'}, status=400)
 
         categories = Category.objects.filter(name=category)
         products   = Product.objects.filter(category__name = category, relative_product = None)[offset:offset+limit]
@@ -29,7 +29,7 @@ class ProductView(View):
                 "products" : [{
                     "id"    : product.id,
                     "name"  : product.name,
-                    "image" : [product_image.image_url for product_image in ProductImage.objects.filter(product=product)],
+                    "image" : [product_image.image_url for product_image in product.productimage_set.all()],
                     "price" : int(product.price)
                 } for product in products]
             }
