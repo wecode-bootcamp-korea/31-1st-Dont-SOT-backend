@@ -23,7 +23,7 @@ class IdcheckView(View):
             if User.objects.filter(username=username).exists():
                 return JsonResponse({"message" : "REGISTERED_USERNAME"}, status = 401) 
 
-            return JsonResponse({"message" : "SUCCESS"}, status = 200)
+            return JsonResponse({"message" : "CHECK_SUCCESS"}, status = 200)
 
         except ValidationError as e:
             return JsonResponse({"message" : e.message}, status = 401)
@@ -95,9 +95,8 @@ class CartView(View):
             product_name = data['product_name']
             sizeup       = data['sizeup']
 
-            if sizeup:            
-                if not Product.objects.filter(relative_product__name = product_name).exists():
-                    return JsonResponse({'message': 'SIZEUP_INVALID'}, status = 406)
+            if sizeup and not Product.objects.filter(relative_product__name = product_name).exists():            
+                return JsonResponse({'message': 'SIZEUP_INVALID'}, status = 406)
 
             product = Product.objects.get(relative_product__name = product_name)
 
