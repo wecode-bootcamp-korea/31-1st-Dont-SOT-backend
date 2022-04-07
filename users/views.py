@@ -94,25 +94,24 @@ class CartView(View):
             data         = json.loads(request.body)
             product_name = data['product_name']
             sizeup       = data['sizeup']
-            product = Product.objects.get(relative_product__name = product_name)
 
-            if sizeup:
-                product = Product.objects.get(relative_product__name = product_name)
-            
-                if not product:
-                    return JsonResponse({'message': 'SIZEUP_INVALID'}, status = 401)
+            if sizeup:            
+                if not Product.objects.filter(relative_product__name = product_name).exists():
+                    return JsonResponse({'message': 'SIZEUP_INVALID'}, status = 406)
+
+            product = Product.objects.get(relative_product__name = product_name)
 
             cart, created = Cart.objects.get_or_create(user = request.user, product_id = product.id, defaults={'quantity': 1})
             
             if not created:
-                cart_quantity = cart.quantity
-                Cart.objects.filter(user = request.user, product_id = product.id).update(quantity = cart_quantity+1)
-                return JsonResponse({"message" : "ALREADY_EXIST"}, status = 200)
+                cart.quantity += 1
+                cart.save()
+                return JsonResponse({"message" : "UPDATED"}, status = 200)
             
-            return JsonResponse({"message" : "SUCCESS"},  status = 200)
+            return JsonResponse({"message" : "CART_CREATED"},  status = 201)
 
         except KeyError:
-            return JsonResponse({"messgae" : "KEY_ERROR"}, status = 401)
+            return JsonResponse({"messgae" : "KEY_ERROR"}, status = 400)
 
 
     @signin_decorator
@@ -130,20 +129,20 @@ class CartView(View):
     @signin_decorator
     def get(self, request):
         try:
-            carts = Cart.objects.filter(user_id = request.user).annotate(
+            carts = Cart.objects.filter(user = request.user).annotate(
                 has_relative_product = Case(When(product__isnull=True, then=False), default=True)
             )
 
         except Cart.DoesNotExist:
-            return JsonResponse({"message" : "INVALID_REQUEST"}, status = 401)
+            return JsonResponse({"message" : "INVALID_REQUEST"}, status = 400)
 
         results = [{
-            "cart_id" : cart.id,
-            "price" : int(cart.product.price),
-            "sizeup" : cart.has_relative_product,
-            "quantity" : cart.quantity,
-            "image" : cart.product.productimage_set.first().image_url,
-            "product_name" : cart.product.name
+            "cart_id"     : cart.id,
+            "price"       : int(cart.product.price),
+            "sizeup"      : cart.has_relative_product,
+            "quantity"    : cart.quantity,
+            "image"       : cart.product.productimage_set.first().image_url,
+            "product_name": cart.product.name
         } for cart in carts]
 
         return JsonResponse({"results" : results}, status = 200)
@@ -152,10 +151,10 @@ class CartView(View):
     @signin_decorator
     def delete(self, request, cart_id):
         try:
-            cart = Cart.objects.get(id = cart_id).delete()
+            Cart.objects.get(id = cart_id).delete()
 
         except Cart.DoesNotExist:
-            return JsonResponse({"message" : "INVALID_REQUEST"}, status = 401)
+            return JsonResponse({"message" : "INVALID_REQUEST"}, status = 400)
 
-        return JsonResponse({"message" : "SUCCESS"}, status = 204)
+        return JsonResponse({"message" : "DELETE_SUCCESS"}, status = 204)
 
