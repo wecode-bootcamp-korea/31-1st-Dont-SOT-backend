@@ -9,53 +9,21 @@ from products.models           import Menu, Category, Product, ProductImage, Ing
 class ProductView(View):
     def get(self, request):
         category = request.GET.get('category')
-        sorting = request.GET.get('sorting')
+        sorting = request.GET.get('sorting', '-price')
+        # :8000/products?category=shoes&sorting=-price
         limit    = int(request.GET.get('limit', 30))
         offset   = int(request.GET.get('offset', 0))
 
-        try:
-            if not category and not sorting:
-                return JsonResponse({'message':'NONE_CATEGORY_OR_SORTING'}, status=400)
+        if category:
+            products   = Product.objects.filter(category__name = category, relative_product = None)\
+                                        .order_by(sorting)[offset:offset+limit]
 
-            if sorting:
-                sorting_option = {'sale':'-sales', 'low_price':'price', 'high_price':'-price'}
+            results = [{
+                'id' : product.id,
+                'name' : product.name
+            } for product in products ]
 
-                for option in sorting_option.keys():
-                    if option == sorting:
-                        product_sorted = Product.objects.filter(relative_product = None).order_by(sorting_option.get(option))[:14]
-
-                if sorting == 'many_ingredient':
-                    product_sorted = Product.objects.filter(relative_product = None).annotate(ingredient_count=Count('ingredient')).order_by('-ingredient_count')[:14]
-
-                results =[
-                    {
-                        'id'    : product.id,
-                        'image' : product.productimage_set.first().image_url,
-                        'name'  : product.name,
-                        'price' : int(product.price)
-                    } for product in product_sorted]
-
-            if category:
-                categories = Category.objects.filter(name=category)
-                products   = Product.objects.filter(category__name = category, relative_product = None)[offset:offset+limit]
-
-                results = [
-                    {
-                        "category" : [{
-                            "id"   : category.id,
-                            "name" : category.name,
-                        } for category in categories],
-
-                        "products" : [{
-                            "id"    : product.id,
-                            "name"  : product.name,
-                            "image" : [product_image.image_url for product_image in product.productimage_set.all()],
-                            "price" : int(product.price)
-                        } for product in products]
-                    }
-                ]
-
-            return JsonResponse({'results':results}, status=200)
+            return JsonResponse({'results' : results}, status=200)
 
         except ValueError:
             return JsonResponse({"message":'INVALID_VALUE'}, status = 400)
