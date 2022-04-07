@@ -115,24 +115,25 @@ class CartView(View):
 
     @signin_decorator
     def patch(self, request, cart_id):
-        
-        data       = json.loads(request.body)
-        quantity   = data['quantity']
+        try:
+            data       = json.loads(request.body)
+            quantity   = data['quantity']
  
-        Cart.objects.filter(id=cart_id).update(quantity = quantity)
+            Cart.objects.filter(id=cart_id).update(quantity = quantity)
 
-        return JsonResponse({"message" : "SUCCESS"}, status = 200)
+            return JsonResponse({"message" : "SUCCESS"}, status = 200)
 
-
+        except KeyError:
+            return JsonResponse({"messgae" : "KEY_ERROR"}, status = 400)
     
+
     @signin_decorator
     def get(self, request):
-        try:
-            carts = Cart.objects.filter(user = request.user).annotate(
-                has_relative_product = Case(When(product__isnull=True, then=False), default=True)
+        carts = Cart.objects.filter(user = request.user).annotate(
+            has_relative_product = Case(When(product__isnull=True, then=False), default=True)
             )
 
-        except Cart.DoesNotExist:
+        if not carts.exists():
             return JsonResponse({"message" : "INVALID_REQUEST"}, status = 400)
 
         results = [{
@@ -140,7 +141,7 @@ class CartView(View):
             "price"       : int(cart.product.price),
             "sizeup"      : cart.has_relative_product,
             "quantity"    : cart.quantity,
-            "image"       : cart.product.productimage_set.first().image_url,
+            #"image"       : cart.product.productimage_set.first().image_url,
             "product_name": cart.product.name
         } for cart in carts]
 
