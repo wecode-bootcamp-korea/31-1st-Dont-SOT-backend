@@ -2,38 +2,63 @@ import json
 
 from django.views              import View
 from django.http               import JsonResponse
+from django.db.models          import Count
 
 from products.models           import Menu, Category, Product, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
 
 class ProductView(View):
     def get(self, request):
         category = request.GET.get('category')
+        sorting = request.GET.get('sorting')
         limit    = int(request.GET.get('limit', 30))
         offset   = int(request.GET.get('offset', 0))
 
-        if not category:
-            return JsonResponse({'message':'NONE_CATEGORY'}, status=400)
+        try:
+            if not category and not sorting:
+                return JsonResponse({'message':'NONE_CATEGORY_OR_SORTING'}, status=400)
 
-        categories = Category.objects.filter(name=category)
-        products   = Product.objects.filter(category__name = category, relative_product = None)[offset:offset+limit]
+            if sorting:
+                sorting_option = {'sale':'-sales', 'low_price':'price', 'high_price':'-price'}
 
-        results = [
-            {
-                "category" : [{
-                    "id"   : category.id,
-                    "name" : category.name,
-                } for category in categories],
+                for option in sorting_option.keys():
+                    if option == sorting:
+                        product_sorted = Product.objects.filter(relative_product = None).order_by(sorting_option.get(option))[:14]
 
-                "products" : [{
-                    "id"    : product.id,
-                    "name"  : product.name,
-                    "image" : [product_image.image_url for product_image in product.productimage_set.all()],
-                    "price" : int(product.price)
-                } for product in products]
-            }
-        ]
+                if sorting == 'many_ingredient':
+                    product_sorted = Product.objects.filter(relative_product = None).annotate(ingredient_count=Count('ingredient')).order_by('-ingredient_count')[:14]
 
-        return JsonResponse({'results':results}, status=200)
+                results =[
+                    {
+                        'id'    : product.id,
+                        'image' : product.productimage_set.first().image_url,
+                        'name'  : product.name,
+                        'price' : int(product.price)
+                    } for product in product_sorted]
+
+            if category:
+                categories = Category.objects.filter(name=category)
+                products   = Product.objects.filter(category__name = category, relative_product = None)[offset:offset+limit]
+
+                results = [
+                    {
+                        "category" : [{
+                            "id"   : category.id,
+                            "name" : category.name,
+                        } for category in categories],
+
+                        "products" : [{
+                            "id"    : product.id,
+                            "name"  : product.name,
+                            "image" : [product_image.image_url for product_image in product.productimage_set.all()],
+                            "price" : int(product.price)
+                        } for product in products]
+                    }
+                ]
+
+            return JsonResponse({'results':results}, status=200)
+
+        except ValueError:
+            return JsonResponse({"message":'INVALID_VALUE'}, status = 400)
 
 class ProductDetailView(View):
     def get(self, request, product_id):
@@ -70,3 +95,4 @@ class ProductDetailView(View):
 
         except Product.DoesNotExist:
             return JsonResponse({'message' : 'INVALID_PRODUCT'} , status = 401) 
+
