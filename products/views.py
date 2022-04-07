@@ -32,6 +32,7 @@ class ProductView(View):
         except ValueError:
             return JsonResponse({"message":'INVALID_VALUE'}, status = 400)
 
+
 class ProductDetailView(View):
     def get(self, request, product_id):
         try:
@@ -63,8 +64,9 @@ class ProductDetailView(View):
                             'made_in'    : product_ingredient.made_in
                         } for product_ingredient in product_ingredients],
             }
+
             return JsonResponse({'results' : results} , status = 200)
 
         except Product.DoesNotExist:
-            return JsonResponse({'message' : 'INVALID_PRODUCT'} , status = 401) 
 
+            return JsonResponse({'message' : 'INVALID_PRODUCT'} , status = 401) 
