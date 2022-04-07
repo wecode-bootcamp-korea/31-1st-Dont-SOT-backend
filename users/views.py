@@ -141,7 +141,7 @@ class CartView(View):
             "price"       : int(cart.product.price),
             "sizeup"      : cart.has_relative_product,
             "quantity"    : cart.quantity,
-            #"image"       : cart.product.productimage_set.first().image_url,
+            "image"       : cart.product.productimage_set.first().image_url,
             "product_name": cart.product.name
         } for cart in carts]
 
