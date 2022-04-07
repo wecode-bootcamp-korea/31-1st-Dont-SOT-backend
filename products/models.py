@@ -26,6 +26,7 @@ class Product(models.Model):
 
     class Meta:
         db_table = "products"
+
         
 class ProductImage(models.Model):
     image_url = models.URLField(max_length = 200)

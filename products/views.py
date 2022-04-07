@@ -1,9 +1,9 @@
 import json
 
-from django.views              import View
-from django.http               import JsonResponse
+from django.views     import View
+from django.http      import JsonResponse
+from products.models  import Menu, Category, Product, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
 
-from products.models           import Menu, Category, Product, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
 
 class ProductView(View):
     def get(self, request):
@@ -34,6 +34,7 @@ class ProductView(View):
         ]
 
         return JsonResponse({'results':results}, status=200)
+
 
 class ProductDetailView(View):
     def get(self, request, product_id):
@@ -66,7 +67,9 @@ class ProductDetailView(View):
                             'made_in'    : product_ingredient.made_in
                         } for product_ingredient in product_ingredients],
             }
+
             return JsonResponse({'results' : results} , status = 200)
 
         except Product.DoesNotExist:
-            return JsonResponse({'message' : 'INVALID_PRODUCT'} , status = 401) 
+
+            return JsonResponse({'message' : 'INVALID_PRODUCT'} , status = 401)
