@@ -1,39 +1,34 @@
 import json
 
-from django.views     import View
-from django.http      import JsonResponse
-from products.models  import Menu, Category, Product, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
+from django.views              import View
+from django.http               import JsonResponse
+from django.db.models          import Count
 
+from products.models           import Menu, Category, Product, ProductImage, Ingredient, Allergen, AllergenStatus, ProductAllergen
 
 class ProductView(View):
     def get(self, request):
-        category = request.GET.get('category')
-        limit    = int(request.GET.get('limit', 30))
+        category = request.GET.get('category', '행사')
+        sorting  = request.GET.get('sorting', '-sales')
+        limit    = int(request.GET.get('limit', 14))
         offset   = int(request.GET.get('offset', 0))
 
-        if not category:
-            return JsonResponse({'message':'NONE_CATEGORY'}, status=400)
+        try:
+            products   = Product.objects.filter(category__name = category, relative_product = None)\
+                                        .order_by(sorting)[offset:offset+limit]
 
-        categories = Category.objects.filter(name=category)
-        products   = Product.objects.filter(category__name = category, relative_product = None)[offset:offset+limit]
-
-        results = [
-            {
-                "category" : [{
-                    "id"   : category.id,
-                    "name" : category.name,
-                } for category in categories],
-
-                "products" : [{
+            results = [
+                {
                     "id"    : product.id,
                     "name"  : product.name,
                     "image" : [product_image.image_url for product_image in product.productimage_set.all()],
                     "price" : int(product.price)
                 } for product in products]
-            }
-        ]
 
-        return JsonResponse({'results':results}, status=200)
+            return JsonResponse({'results':results}, status=200)
+
+        except ValueError:
+            return JsonResponse({"message":'INVALID_VALUE'}, status = 400)
 
 
 class ProductDetailView(View):
@@ -72,4 +67,4 @@ class ProductDetailView(View):
 
         except Product.DoesNotExist:
 
-            return JsonResponse({'message' : 'INVALID_PRODUCT'} , status = 401)
+            return JsonResponse({'message' : 'INVALID_PRODUCT'} , status = 401) 
