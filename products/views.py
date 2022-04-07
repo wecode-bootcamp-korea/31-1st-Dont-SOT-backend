@@ -9,15 +9,13 @@ from products.models           import Menu, Category, Product, ProductImage, Ing
 class ProductView(View):
     def get(self, request):
         category = request.GET.get('category', '행사')
-        sorting = request.GET.get('sorting', '-sales')
-        limit    = int(request.GET.get('limit', 30))
+        sorting  = request.GET.get('sorting', '-sales')
+        limit    = int(request.GET.get('limit', 14))
         offset   = int(request.GET.get('offset', 0))
 
         try:
-            if category:
-                products   = Product.objects.filter(category__name = category, relative_product = None)[offset:offset+limit]
-
-            products = Product.objects.filter(relative_product = None).order_by(sorting)[offset:offset+limit][:14]
+            products   = Product.objects.filter(category__name = category, relative_product = None)\
+                                        .order_by(sorting)[offset:offset+limit]
 
             results = [
                 {
